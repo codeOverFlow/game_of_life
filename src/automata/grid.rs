@@ -1,17 +1,16 @@
 use crate::automata::cellul::Cellul;
-use crate::automata::cellul::CellulState;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
 /// The grid of the game.
+#[derive(Debug)]
 pub struct Grid {
     /// All the cells.
     pub cells: Vec<Cellul>,
     /// The width of the grid.
-    width: u32,
+    pub width: u32,
     /// The height of the grid.
-    height: u32,
+    pub height: u32,
 }
 
 impl Grid {
@@ -42,53 +41,57 @@ impl Grid {
     }
 
     fn compute_index(&self, row: u32, column: u32) -> usize {
-        (row * self.height + column) as usize
+        (row * self.width + column) as usize
     }
 
     pub fn get_cellul(&self, row: u32, column: u32) -> Option<&Cellul> {
         self.cells.get(self.compute_index(row, column))
     }
 
-    pub fn update_grid(self: Grid) -> Grid {
-        let width = self.width;
-        let height = self.height;
-        let new_grid = Grid::from(&self);
-        for row in 0..width {
-            for column in 0..height {
-                if let Some(cell) = self.get_cellul(row, column) {
-                    let neighbors_coord = cell.coordinate.get_neighboors_coords(width, height);
+    pub fn update_grid(&self) {
+        let new_grid = Grid::from(self);
 
-                    let neighbors_cells = neighbors_coord
-                        .iter()
-                        .map(|coord| self.get_cellul(coord.row, coord.column));
+        // Construct the next grid
+        for cell in self.cells.iter() {
+            let neighbors_coord = cell
+                .coordinate
+                .get_neighboors_coords(self.width, self.height);
 
-                    let alive_neighbors = neighbors_cells
-                        .filter(|option_c| match option_c {
-                            Some(c) => c.is_alive(),
-                            None => false,
-                        })
-                        .count();
+            let neighbors_cells = neighbors_coord
+                .iter()
+                .map(|coord| self.get_cellul(coord.row, coord.column));
 
-                    // update the cell in the new grid
-                    // 1. Die from solitude or overpopulation
-                    if cell.is_alive() && (alive_neighbors <= 1 || alive_neighbors >= 4) {
-                        if let Some(new_cell) =
-                            new_grid.get_cellul(cell.coordinate.row, cell.coordinate.column)
-                        {
-                            new_cell.update_state(CellulState::DEAD)
-                        }
-                    }
-                    if !cell.is_alive() && alive_neighbors == 3 {
-                        if let Some(new_cell) =
-                            new_grid.get_cellul(cell.coordinate.row, cell.coordinate.column)
-                        {
-                            new_cell.update_state(CellulState::ALIVE)
-                        }
-                    }
+            let alive_neighbors = neighbors_cells
+                .filter(|option_c| match option_c {
+                    Some(c) => c.is_alive(),
+                    None => false,
+                })
+                .count();
+
+            // update the cell in the new grid
+            // 1. Die from solitude or overpopulation
+            if cell.is_alive() && (alive_neighbors <= 1 || alive_neighbors >= 4) {
+                if let Some(new_cell) =
+                    new_grid.get_cellul(cell.coordinate.row, cell.coordinate.column)
+                {
+                    new_cell.kill_cellul();
+                }
+            }
+            if !cell.is_alive() && alive_neighbors == 3 {
+                if let Some(new_cell) =
+                    new_grid.get_cellul(cell.coordinate.row, cell.coordinate.column)
+                {
+                    new_cell.revive_cellul();
                 }
             }
         }
-        new_grid
+
+        // Update the current grid
+        for (index, cell) in new_grid.cells.iter().enumerate() {
+            if let Some(c) = self.cells.get(index) {
+                c.update_state(cell.get_state());
+            }
+        }
     }
 }
 

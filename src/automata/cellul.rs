@@ -1,4 +1,4 @@
-use crate::automata::cellul::CellulState::ALIVE;
+use crate::automata::cellul::CellulState::{ALIVE, DEAD};
 use std::cell::Cell;
 
 /////////////////////////////////////////////
@@ -81,8 +81,8 @@ impl PartialEq for Coordinate {
 // CELLULSTATE ENUM
 /////////////////////////////////////////////
 
-#[derive(Debug, Copy, Clone)]
 /// The state of the `Cellul`.
+#[derive(Debug, Copy, Clone)]
 pub enum CellulState {
     /// The `Cellul` is alive.
     ALIVE,
@@ -114,6 +114,14 @@ impl Cellul {
 
     pub fn update_state(&self, new_state: CellulState) {
         self.state.set(new_state)
+    }
+
+    pub fn revive_cellul(&self) {
+        self.state.set(ALIVE)
+    }
+
+    pub fn kill_cellul(&self) {
+        self.state.set(DEAD)
     }
 }
 
